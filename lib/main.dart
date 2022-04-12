@@ -1,25 +1,41 @@
 import 'package:flutter/material.dart';
-import 'package:stacked_services/stacked_services.dart';
-import 'package:tagesplan/app/app.router.dart';
-import 'package:tagesplan/ui/shared/setup_sidebar_ui.dart';
-import 'app/app.locator.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:tagesplan/logic/bloc/navigation_bloc.dart';
+import 'package:tagesplan/logic/bloc/network_bloc.dart';
+import 'package:tagesplan/logic/cubit/connection_cubit.dart';
+import 'package:tagesplan/presentation/widgets/sidebar_layout.dart';
 
-Future main() async {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  setupLocator();
-  await setupSidebarUI();
-  runApp(const MyApp());
+
+  final storage = await HydratedStorage.build(
+    storageDirectory: await getApplicationDocumentsDirectory(),
+  );
+  HydratedBlocOverrides.runZoned(() => runApp(MyApp()), storage: storage);
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Connectivity',
-      onGenerateRoute: StackedRouter().onGenerateRoute,
-      navigatorKey: StackedService.navigatorKey,
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<ConnectionCubit>(
+          create: (context) => ConnectionCubit(),
+        ),
+        BlocProvider<NavigationBloc>(
+          create: (context) => NavigationBloc(),
+        ),
+        BlocProvider<NetworkBloc>(
+          create: (context) => NetworkBloc()..add(ListenConnection()),
+        ),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Connectivity',
+        home: SidebarLayout(),
+      ),
     );
   }
 }
