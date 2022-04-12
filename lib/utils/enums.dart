@@ -1,0 +1,1 @@
+enum SidebarType { public, private }
